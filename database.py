@@ -3,7 +3,7 @@ import math
 import string
 import numpy as np
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource
+from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, Panel, Tabs, DataTable, DateFormatter, TableColumn
 from bokeh.layouts import widgetbox, column
 from gmplot import gmplot
 from bokeh.resources import CDN
@@ -38,7 +38,7 @@ assert(30 == df.shape[1])
 # print(df.head())
 
 #---------------------AVG RESPONSE TIME VS CALL TIME---------------------------#
-def response_to_call(df, t=5):
+def response_to_call(df, t=30):
     '''This function graphs the average dispatch response time against the time 
     of day the call was made.
 
@@ -47,8 +47,6 @@ def response_to_call(df, t=5):
                average response time is calculated)
 
     Output: graph (HTML)'''
-
-    output_file("average_response.html")
 
     temp = df.set_index('received_timestamp')
     df_time = temp.index.time
@@ -101,16 +99,25 @@ def response_to_call(df, t=5):
     ]
     hover.formatters = {'time':'datetime'}
 
-    show(p)
+    return p
 
-#response_to_call(df)
+def tabbed_call(df):
+    output_file("response_tabs.html")
+    tab1 = Panel(child=response_to_call(df, 15), title = "Quarter Hour")
+    tab2 = Panel(child=response_to_call(df), title = "Half Hour")
+    tab3 = Panel(child=response_to_call(df, 60), title = "Hour")
+
+    tabs = Tabs(tabs=[tab1,tab2,tab3])
+    show(tabs)
+
+#tabbed_call(df)
 
 #---------------------CALL LOCATION HEAT MAP-----------------------------------#
 def calls_per_area(df):
     '''This function provides a heat map of the number of calls through the
     San Francisco area.
 
-    Input: df (pd.DataFrame)
+    Input: df (pd.DataFrame)           
 
     Output: heatmap (html)'''
     gmap = gmplot.GoogleMapPlotter(37.766956, -122.438481, 13)
@@ -127,17 +134,16 @@ def calls_per_area(df):
     
 
 #---------------------AMBULANCE TRANSPORT VS CALL TIME-------------------------#
-def ambulance_response(df):
+def ambulance_response(df, t=30):
     '''This function graphs the transport time of an ambulance against the time
     of day the call was made.
 
     Input: df (pd.DataFrame)
+           t  (int; the granularity of each time period in min for which an 
+               average response time is calculated)
 
-    Output: graph (HTML)
-            times (pd.Series)
-            average ambulance response per time (pd.Series)'''
+    Output: graph (HTML)'''
 
-    output_file("ambulance.html")
 
     temp = df.set_index('received_timestamp')
     df_time = temp.index.time
@@ -155,7 +161,7 @@ def ambulance_response(df):
                 ambulance_time.append(diff)
 
                 #granularity of average
-                time = df_time[i].replace(minute = df_time[i].minute - (df_time[i].minute%10))
+                time = df_time[i].replace(minute = df_time[i].minute - (df_time[i].minute%t))
                 time = time.replace(second = 0)
                 time_of_day.append(time)
 
@@ -189,10 +195,18 @@ def ambulance_response(df):
     ]
     hover.formatters = {'time':'datetime'}
 
-    show(p)
+    return p
 
-#ambulance_response(df)
+def tabbed_am(df):
+    output_file("ambulance_tabs.html")
+    tab1 = Panel(child=ambulance_response(df, 15), title = "Quarter Hour")
+    tab2 = Panel(child=ambulance_response(df), title = "Half Hour")
+    tab3 = Panel(child=ambulance_response(df, 60), title = "Hour")
 
+    tabs = Tabs(tabs=[tab1,tab2,tab3])
+    show(tabs)
+
+#tabbed_am(df)
 
 
 
@@ -204,21 +218,29 @@ def longest_dispatch(df):
     Input: df (pd.DataFrame)
 
     Output: (zipcode, time) tuple of int set and int'''
-    
+    output_file("area_times.html")
+
     dispatch_dict = dict()
+    #creates dictionary of dispatch times per zip
     for i,row in df.iterrows():
         if not pd.isnull(row['on_scene_timestamp']):
             dispatch = row['on_scene_timestamp']-row['received_timestamp']
             dispatch_min = dispatch.total_seconds()//60
-            if row['zipcode_of_incident'] not in dispatch_dict:
-                dispatch_dict[row['zipcode_of_incident']] = [dispatch_min]
-            else:
-                dispatch_dict[row['zipcode_of_incident']] += [dispatch_min]
+            if dispatch_min > 0 and dispatch_min < 120:
+                if row['zipcode_of_incident'] not in dispatch_dict:
+                    dispatch_dict[row['zipcode_of_incident']] = [dispatch_min]
+                else:
+                    dispatch_dict[row['zipcode_of_incident']] += [dispatch_min]
 
+    #finds zip and longest dispatch time
     max_time = 0
     max_zip = set()
+    zips = []
+    times = []
     for zipcode in dispatch_dict:
+        zips.append(zipcode)
         average = sum(dispatch_dict[zipcode])/len(dispatch_dict[zipcode])
+        times.append(average)
         if average > max_time:
             max_time = average
             max_zip.clear()
@@ -226,15 +248,28 @@ def longest_dispatch(df):
         elif average == max_time:
             max_zip.add(zipcode)
 
+    data = dict(zipcodes=zips,averages=times)
+    source = ColumnDataSource(data=data)
+
+    columns = [
+            TableColumn(field="zipcodes", title="Zipcode"),
+            TableColumn(field="averages", title="Average Dispatch Time"),
+        ]
+    data_table = DataTable(source=source, columns=columns, width=700, height=300, sortable=True)
+
+    show(widgetbox(data_table))
+
     return (max_zip, max_time) 
 
 def most_common_call(df, zipcode):
+    #finds the most common unit dispatch for a zipcode
     print(zipcode)
     call_dict = dict()
     for i,row in df.iterrows():
         if not pd.isnull(row['unit_type']) and row['zipcode_of_incident'] == zipcode:
             call_dict[row['unit_type']] = call_dict.get(row['unit_type'],1) + 1
     print(call_dict)
+
     max_count = 0
     most_common = []
     for key in call_dict:
@@ -246,7 +281,7 @@ def most_common_call(df, zipcode):
 
     return most_common
 
-values = longest_dispatch(df)
-print(values)
-print(most_common_call(df,list(values[0])[0]))
+# values = longest_dispatch(df)
+# print(values)
+# print(most_common_call(df,list(values[0])[0]))
 
