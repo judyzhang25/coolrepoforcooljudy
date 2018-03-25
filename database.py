@@ -3,9 +3,8 @@ import math
 import string
 import numpy as np
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import DatetimeTickFormatter
-from bokeh.layouts import widgetbox
-from bokeh.models.widgets import Slider
+from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool
+from gmplot import gmplot
 
 #---------------------LOADING CSV INTO PANDAS DATAFRAME------------------------#
 def load_data(fname):
@@ -44,7 +43,7 @@ def response_to_call(df, t=5):
            t  (int; the granularity of each time period in min for which an 
                average response time is calculated)
 
-    Output: graph'''
+    Output: graph (HTML)'''
 
     temp = df.set_index('received_timestamp')
     df_time = temp.index.time
@@ -56,16 +55,22 @@ def response_to_call(df, t=5):
         if not pd.isnull(row['on_scene_timestamp']):
             diff = row['on_scene_timestamp']-row['received_timestamp']
             diff = diff.total_seconds()//60
+
+            #within an acceptable range of values
             if diff < 60 and diff > 0:
                 response_time.append(diff)
+
+                #granularity of average
                 time = df_time[i].replace(minute = df_time[i].minute - (df_time[i].minute%t))
                 time = time.replace(second = 0)
                 time_of_day.append(time)
 
     assert(len(response_time)==len(time_of_day))
     response_call_df = pd.DataFrame(data = {'response': response_time, 'call_time': time_of_day})
+    #calculates average
     avg_response_time = response_call_df.groupby(['call_time'])['response'].mean()
 
+    #plots averages
     TOOLS="hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,save"
 
     p = figure(plot_width = 800, plot_height = 400, title = "Average Response Time VS Call Time", tools = TOOLS)
@@ -77,26 +82,32 @@ def response_to_call(df, t=5):
     p.xaxis.axis_label = 'Time of Day'
     p.yaxis.axis_label = 'Average Response'
 
-    slider = Slider(start=0, end=10, value=1, step=.1, title="Stuff")
-
+    output_file("average_response.html")
     show(p)
-    show(slider)
     return (avg_response_time.index, avg_response_time)
 
 response_to_call(df)
 
-#---------------------ZIPCODE VS CALL TYPE-------------------------------------#
-def calls_per_area(df, zipcode, call='all'):
-    '''This function provides the data associating the number of calls of a
-    particular type with a certain area. If the call type is not specified,
-    then it provides the total number of dispatch calls per area.
+#---------------------CALL LOCATION HEAT MAP-----------------------------------#
+def calls_per_area(df):
+    '''This function provides a heat map of the number of calls through the
+    San Francisco area.
 
     Input: df (pd.DataFrame)
-           zipcode (int)
-           call (string)
 
-    Output: result (pd.DataFrame)'''
-    pass
+    Output: heatmap (html)'''
+    gmap = gmplot.GoogleMapPlotter(37.766956, -122.438481, 13)
+    
+    latlng_list = []
+    for i, row in df.iterrows():
+        latlng_list.append((row['latitude'],row['longitude']))
+
+    heat_lats, heat_lngs = zip(*latlng_list)
+    gmap.heatmap(heat_lats, heat_lngs)
+    gmap.draw("heatmap.html")
+
+calls_per_area(df)
+    
 
 #---------------------AMBULANCE TRANSPORT VS CALL TIME-------------------------#
 def ambulance_response(df):
@@ -105,8 +116,59 @@ def ambulance_response(df):
 
     Input: df (pd.DataFrame)
 
-    Output: graph'''
-    pass
+    Output: graph (HTML)
+            times (pd.Series)
+            average ambulance response per time (pd.Series)'''
+    temp = df.set_index('received_timestamp')
+    df_time = temp.index.time
+
+    ambulance_time = []
+    time_of_day = []
+
+    for i,row in df.iterrows():
+        if not pd.isnull(row['hospital_timestamp']):
+            diff = row['hospital_timestamp']-row['received_timestamp']
+            diff = diff.total_seconds()//60
+
+            #within an acceptable range of values
+            if diff < 60 and diff > 0:
+                ambulance_time.append(diff)
+
+                #granularity of average
+                time = df_time[i].replace(minute = df_time[i].minute - (df_time[i].minute%10))
+                time = time.replace(second = 0)
+                time_of_day.append(time)
+
+    assert(len(ambulance_time)==len(time_of_day))
+    response_df = pd.DataFrame(data = {'transport': ambulance_time, 'call_time': time_of_day})
+    #calculates average
+    avg_response_time = response_df.groupby(['call_time'])['transport'].mean()
+
+    #plots averages
+    TOOLS="hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,save"
+
+    p = figure(plot_width = 800, plot_height = 400, title = "Average Ambulance Transport Time VS Call Time", tools = TOOLS)
+    p.line(avg_response_time.index, avg_response_time)
+    p.xaxis.formatter=DatetimeTickFormatter()
+    p.xaxis.major_label_orientation = math.pi/4
+    p.grid.grid_line_alpha=0.3
+
+    p.xaxis.axis_label = 'Time of Day'
+    p.yaxis.axis_label = 'Average Ambulance Transport Time'
+
+    # hover = p.select_one(HoverTool)
+    # hover.point_policy = "follow_mouse"
+    # hover.tooltips = [
+    #     ("Name", "@name"),
+    #     ("Unemployment rate)", "@rate%"),
+    #     ("(Long, Lat)", "($x, $y)"),
+    # ]
+
+    show(p)
+    output_file("ambulance.html")
+    return (avg_response_time.index, avg_response_time)
+
+ambulance_response(df)
 
 #---------------------MOST LIKELY DISPATCH-------------------------------------#
 def dispatch_required(df, address, time):
@@ -128,6 +190,30 @@ def longest_dispatch(df):
 
     Input: df (pd.DataFrame)
 
-    Output: (area, result) tuple of string and pd.DataFrame'''
-    pass
+    Output: (zipcode, time) tuple of int set and int'''
+    
+    dispatch_dict = dict()
+    for i,row in df.iterrows():
+        if not pd.isnull(row['on_scene_timestamp']):
+            dispatch = row['on_scene_timestamp']-row['received_timestamp']
+            dispatch_min = dispatch.total_seconds()//60
+            if row['zipcode_of_incident'] not in dispatch_dict:
+                dispatch_dict[row['zipcode_of_incident']] = [dispatch_min]
+            else:
+                dispatch_dict[row['zipcode_of_incident']] += [dispatch_min]
+
+    max_time = 0
+    max_zip = set()
+    for zipcode in dispatch_dict:
+        average = sum(dispatch_dict[zipcode])/len(dispatch_dict[zipcode])
+        if average > max_time:
+            max_time = average
+            max_zip.clear()
+            max_zip.add(zipcode)
+        elif average == max_time:
+            max_zip.add(zipcode)
+
+    return (max_zip, max_time) 
+
+print(longest_dispatch(df))
 
