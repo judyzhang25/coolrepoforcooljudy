@@ -3,7 +3,8 @@ import math
 import string
 import numpy as np
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool
+from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, Slider, Dropdown, ColumnDataSource
+from bokeh.layouts import widgetbox, column
 from gmplot import gmplot
 
 #---------------------LOADING CSV INTO PANDAS DATAFRAME------------------------#
@@ -45,6 +46,8 @@ def response_to_call(df, t=5):
 
     Output: graph (HTML)'''
 
+    output_file("average_response.html")
+
     temp = df.set_index('received_timestamp')
     df_time = temp.index.time
 
@@ -70,11 +73,17 @@ def response_to_call(df, t=5):
     #calculates average
     avg_response_time = response_call_df.groupby(['call_time'])['response'].mean()
 
+    #generates column data
+    data = {'time':avg_response_time.index,
+            'response':avg_response_time}
+    # print(data['time'])
+    source = ColumnDataSource(data=data)
+
     #plots averages
     TOOLS="hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,save"
 
     p = figure(plot_width = 800, plot_height = 400, title = "Average Response Time VS Call Time", tools = TOOLS)
-    p.line(avg_response_time.index, avg_response_time)
+    p.line(x = 'time', y = 'response', source = source)
     p.xaxis.formatter=DatetimeTickFormatter()
     p.xaxis.major_label_orientation = math.pi/4
     p.grid.grid_line_alpha=0.3
@@ -82,7 +91,14 @@ def response_to_call(df, t=5):
     p.xaxis.axis_label = 'Time of Day'
     p.yaxis.axis_label = 'Average Response'
 
-    output_file("average_response.html")
+    hover = p.select_one(HoverTool)
+    hover.point_policy = "follow_mouse"
+    hover.tooltips = [
+        ("Time", "@time{%T}"),
+        ("Dispatch Response Time", "@response")
+    ]
+    hover.formatters = {'time':'datetime'}
+
     show(p)
     return (avg_response_time.index, avg_response_time)
 
@@ -119,6 +135,9 @@ def ambulance_response(df):
     Output: graph (HTML)
             times (pd.Series)
             average ambulance response per time (pd.Series)'''
+
+    output_file("ambulance.html")
+
     temp = df.set_index('received_timestamp')
     df_time = temp.index.time
 
@@ -144,11 +163,16 @@ def ambulance_response(df):
     #calculates average
     avg_response_time = response_df.groupby(['call_time'])['transport'].mean()
 
+    #generates column data
+    data = {'time':avg_response_time.index,
+            'response':avg_response_time}
+    source = ColumnDataSource(data=data)
+
     #plots averages
     TOOLS="hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,save"
 
     p = figure(plot_width = 800, plot_height = 400, title = "Average Ambulance Transport Time VS Call Time", tools = TOOLS)
-    p.line(avg_response_time.index, avg_response_time)
+    p.line(x = 'time', y = 'response', source = source)
     p.xaxis.formatter=DatetimeTickFormatter()
     p.xaxis.major_label_orientation = math.pi/4
     p.grid.grid_line_alpha=0.3
@@ -156,28 +180,26 @@ def ambulance_response(df):
     p.xaxis.axis_label = 'Time of Day'
     p.yaxis.axis_label = 'Average Ambulance Transport Time'
 
-    # hover = p.select_one(HoverTool)
-    # hover.point_policy = "follow_mouse"
-    # hover.tooltips = [
-    #     ("Name", "@name"),
-    #     ("Unemployment rate)", "@rate%"),
-    #     ("(Long, Lat)", "($x, $y)"),
-    # ]
+    hover = p.select_one(HoverTool)
+    hover.point_policy = "follow_mouse"
+    hover.tooltips = [
+        ("Time", "@time{%T}"),
+        ("Ambulance Response Time", "@response")
+    ]
+    hover.formatters = {'time':'datetime'}
 
     show(p)
-    output_file("ambulance.html")
+    
     return (avg_response_time.index, avg_response_time)
 
 ambulance_response(df)
 
 #---------------------MOST LIKELY DISPATCH-------------------------------------#
-def dispatch_required(df, address, time):
+def dispatch_required(df):
     '''This function predicts the unit_type most likely to respond to a call
     in a certain location/time.
 
     Input: df (pd.DataFrame)
-           address (string)
-           time (datetime)
 
     Output: unit_type (string)'''
     pass
