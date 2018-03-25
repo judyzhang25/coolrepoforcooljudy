@@ -1,7 +1,5 @@
 import pandas as pd
 import math
-import string
-import numpy as np
 from bokeh.plotting import figure, output_file, show
 from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, Panel, Tabs, DataTable, DateFormatter, TableColumn
 from bokeh.layouts import widgetbox, column

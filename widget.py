@@ -1,7 +1,6 @@
 from bokeh.layouts import widgetbox, row
-from bokeh.models import CustomJS, ColumnDataSource, Slider, Dropdown, TextInput, Div, Paragraph
+from bokeh.models import CustomJS, ColumnDataSource, Dropdown, aragraph
 from bokeh.plotting import figure, output_file, show
-from bokeh.io import curdoc
 
 import pandas as pd
 
