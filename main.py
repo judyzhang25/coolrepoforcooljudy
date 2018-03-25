@@ -6,6 +6,9 @@ from bokeh.layouts import widgetbox, column
 from gmplot import gmplot
 from bokeh.resources import CDN
 from bokeh.embed import autoload_static
+import os
+
+os.environ["GOOGLE_API_KEY"] = "AIzaSyCwQDcVpWzxDW7lnWqJjivaGXO3YBo2-IU"
 
 #---------------------LOADING CSV INTO PANDAS DATAFRAME------------------------#
 def load_data(fname):
