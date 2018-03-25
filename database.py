@@ -3,7 +3,7 @@ import math
 import string
 import numpy as np
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, Slider, Dropdown, ColumnDataSource
+from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource
 from bokeh.layouts import widgetbox, column
 from gmplot import gmplot
 from bokeh.resources import CDN
@@ -103,7 +103,7 @@ def response_to_call(df, t=5):
 
     show(p)
 
-response_to_call(df)
+#response_to_call(df)
 
 #---------------------CALL LOCATION HEAT MAP-----------------------------------#
 def calls_per_area(df):
@@ -123,7 +123,7 @@ def calls_per_area(df):
     gmap.heatmap(heat_lats, heat_lngs)
     gmap.draw("heatmap.html")
 
-calls_per_area(df)
+#calls_per_area(df)
     
 
 #---------------------AMBULANCE TRANSPORT VS CALL TIME-------------------------#
@@ -191,17 +191,9 @@ def ambulance_response(df):
 
     show(p)
 
-ambulance_response(df)
+#ambulance_response(df)
 
-#---------------------MOST LIKELY DISPATCH-------------------------------------#
-def dispatch_required(df):
-    '''This function predicts the unit_type most likely to respond to a call
-    in a certain location/time.
 
-    Input: df (pd.DataFrame)
-
-    Output: unit_type (string)'''
-    pass
 
 
 #---------------------AREA VS DISPATCH TIME------------------------------------#
@@ -236,5 +228,25 @@ def longest_dispatch(df):
 
     return (max_zip, max_time) 
 
-print(longest_dispatch(df))
+def most_common_call(df, zipcode):
+    print(zipcode)
+    call_dict = dict()
+    for i,row in df.iterrows():
+        if not pd.isnull(row['unit_type']) and row['zipcode_of_incident'] == zipcode:
+            call_dict[row['unit_type']] = call_dict.get(row['unit_type'],1) + 1
+    print(call_dict)
+    max_count = 0
+    most_common = []
+    for key in call_dict:
+        if call_dict[key] > max_count:
+            most_common = [key]
+            max_count = call_dict[key]
+        elif call_dict[key] == max_count:
+            most_common.append(key)
+
+    return most_common
+
+values = longest_dispatch(df)
+print(values)
+print(most_common_call(df,list(values[0])[0]))
 
