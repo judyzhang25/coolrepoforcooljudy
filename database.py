@@ -6,6 +6,8 @@ from bokeh.plotting import figure, output_file, show
 from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, Slider, Dropdown, ColumnDataSource
 from bokeh.layouts import widgetbox, column
 from gmplot import gmplot
+from bokeh.resources import CDN
+from bokeh.embed import autoload_static
 
 #---------------------LOADING CSV INTO PANDAS DATAFRAME------------------------#
 def load_data(fname):
@@ -82,7 +84,7 @@ def response_to_call(df, t=5):
     #plots averages
     TOOLS="hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,save"
 
-    p = figure(plot_width = 800, plot_height = 400, title = "Average Response Time VS Call Time", tools = TOOLS)
+    p = figure(plot_width = 700, plot_height = 350, title = "Average Response Time VS Call Time", tools = TOOLS)
     p.line(x = 'time', y = 'response', source = source)
     p.xaxis.formatter=DatetimeTickFormatter()
     p.xaxis.major_label_orientation = math.pi/4
@@ -100,7 +102,6 @@ def response_to_call(df, t=5):
     hover.formatters = {'time':'datetime'}
 
     show(p)
-    return (avg_response_time.index, avg_response_time)
 
 response_to_call(df)
 
@@ -171,7 +172,7 @@ def ambulance_response(df):
     #plots averages
     TOOLS="hover,crosshair,pan,wheel_zoom,zoom_in,zoom_out,box_zoom,save"
 
-    p = figure(plot_width = 800, plot_height = 400, title = "Average Ambulance Transport Time VS Call Time", tools = TOOLS)
+    p = figure(plot_width = 700, plot_height = 350, title = "Average Ambulance Transport Time VS Call Time", tools = TOOLS)
     p.line(x = 'time', y = 'response', source = source)
     p.xaxis.formatter=DatetimeTickFormatter()
     p.xaxis.major_label_orientation = math.pi/4
@@ -189,8 +190,6 @@ def ambulance_response(df):
     hover.formatters = {'time':'datetime'}
 
     show(p)
-    
-    return (avg_response_time.index, avg_response_time)
 
 ambulance_response(df)
 
