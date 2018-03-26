@@ -131,6 +131,7 @@ def calls_per_area(df):
     gmap.heatmap(heat_lats, heat_lngs)
     gmap.draw("heatmap.html")
 
+
 #calls_per_area(df)
     
 
