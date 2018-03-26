@@ -6,6 +6,9 @@
 
 header {
   padding: 154px 0 100px;
+  background-image: url(../images/image3.jpg);
+  background-position: center;
+  background-size: cover;
 }
 
 @media (min-width: 992px) {
@@ -17,3 +20,6 @@ header {
 section {
   padding: 150px 0;
 }
+
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }

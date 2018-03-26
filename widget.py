@@ -1,5 +1,5 @@
 from bokeh.layouts import widgetbox, row
-from bokeh.models import CustomJS, ColumnDataSource, Dropdown, aragraph
+from bokeh.models import CustomJS, ColumnDataSource, Dropdown, Paragraph
 from bokeh.plotting import figure, output_file, show
 
 import pandas as pd
@@ -78,7 +78,7 @@ z=94102
 #     """)
 
 #dispatch
-def dispatch_required(source=source):
+def callback(source=source):
     #counts the frequency of unit calls per hour and zipcode given
     datum= source.data
     zipcodes = datum['zipcode']
@@ -131,7 +131,7 @@ zip_menu = [("94102","94102"),
             ("94133","94133"),
             ("94134","94134"),
             ("94158","94158")]
-zipdrop = Dropdown(label="Zipcode", button_type="warning", menu=zip_menu, callback=CustomJS.from_py_func(dispatch_required))
+zipdrop = Dropdown(label="Zipcode", button_type="warning", menu=zip_menu, callback=CustomJS.from_py_func(callback))
 z = zipdrop.value
 
 
@@ -161,7 +161,7 @@ menu = [("12:00 AM", "0"),
         ("10:00 PM", "22"),
         ("11:00 PM", "23")
         ]
-timedrop = Dropdown(label="Time of Day", button_type="warning", menu=menu, callback=CustomJS.from_py_func(dispatch_required))
+timedrop = Dropdown(label="Time of Day", button_type="warning", menu=menu, callback=CustomJS.from_py_func(callback))
 t = timedrop.value
 
 
@@ -173,6 +173,8 @@ widgetbox(timedrop),
 widgetbox(p)
 )
 show(layout)
+
+
 
 
 
