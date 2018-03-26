@@ -132,8 +132,20 @@ def calls_per_area(df):
     gmap.draw("heatmap.html")
 
 
-#calls_per_area(df)
-    
+calls_per_area(df)
+tempHolder=''
+oldLine='<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false"></script>'
+newLine='<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key=AIzaSyCwQDcVpWzxDW7lnWqJjivaGXO3YBo2-IU"></script>'
+#Open the file created by gmplot, do a find and replace. 
+#My file is in flask, so it is in static/map.html, change path to your file
+with open('heatmap.html') as fh:
+        for line in fh:
+                tempHolder += line.replace(oldLine,newLine)
+fh.close
+#Now open the file again and overwrite with the edited text
+fh=open('heatmap.html', 'w')
+fh.write(tempHolder)
+fh.close
 
 #---------------------AMBULANCE TRANSPORT VS CALL TIME-------------------------#
 def ambulance_response(df, t=30):
