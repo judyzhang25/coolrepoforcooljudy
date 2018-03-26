@@ -132,20 +132,42 @@ def calls_per_area(df):
     gmap.draw("heatmap.html")
 
 
-calls_per_area(df)
-tempHolder=''
-oldLine='<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false"></script>'
-newLine='<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key=AIzaSyCwQDcVpWzxDW7lnWqJjivaGXO3YBo2-IU"></script>'
-#Open the file created by gmplot, do a find and replace. 
-#My file is in flask, so it is in static/map.html, change path to your file
-with open('heatmap.html') as fh:
-        for line in fh:
-                tempHolder += line.replace(oldLine,newLine)
-fh.close
-#Now open the file again and overwrite with the edited text
-fh=open('heatmap.html', 'w')
-fh.write(tempHolder)
-fh.close
+# calls_per_area(df)
+# tempHolder=''
+# oldLine='<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false"></script>'
+# newLine='<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key=AIzaSyCwQDcVpWzxDW7lnWqJjivaGXO3YBo2-IU"></script>'
+# #Open the file created by gmplot, do a find and replace. 
+# #My file is in flask, so it is in static/map.html, change path to your file
+# with open('heatmap.html') as fh:
+#         for line in fh:
+#                 tempHolder += line.replace(oldLine,newLine)
+# fh.close
+# #Now open the file again and overwrite with the edited text
+# fh=open('heatmap.html', 'w')
+# fh.write(tempHolder)
+# fh.close
+
+#---------------------CRIME LOCATION HEAT MAP----------------------------------#
+def crime_per_area(df):
+    '''This function provides a heat map of the number of crime-related calls 
+    through the San Francisco area. Crime-related calls are distinguished as 
+    ambulance dispatches.
+
+    Input: df (pd.DataFrame)           
+
+    Output: heatmap (html)'''
+    gmap = gmplot.GoogleMapPlotter(37.766956, -122.438481, 13)
+    
+    latlng_list = []
+    for i, row in df.iterrows():
+        if row['unit_type'] == "MEDIC":
+            latlng_list.append((row['latitude'],row['longitude']))
+
+    heat_lats, heat_lngs = zip(*latlng_list)
+    gmap.heatmap(heat_lats, heat_lngs)
+    gmap.draw("crime_heatmap.html")
+
+# crime_per_area(df)
 
 #---------------------AMBULANCE TRANSPORT VS CALL TIME-------------------------#
 def ambulance_response(df, t=30):
