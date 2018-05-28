@@ -1,7 +1,7 @@
 import pandas as pd
 import math
 from bokeh.plotting import figure, output_file, show
-from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, Panel, Tabs, DataTable, DateFormatter, TableColumn
+from bokeh.models import DatetimeTickFormatter, Panel, Tabs, HoverTool, CustomJS, ColumnDataSource, DateFormatter, TableColumn
 from bokeh.layouts import widgetbox, column
 from gmplot import gmplot
 from bokeh.resources import CDN
